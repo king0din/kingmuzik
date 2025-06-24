@@ -50,23 +50,23 @@ cd kingmuzik
 
 # .env dosyasını bu komutu çalıştırıp düsenle
 ``` bash
-nano Config.env
+nano config.env
 ```
 **aşağıdaki gibi açılan bilgilerin karşısın doldurun**
 
-`API_ID =`
+`API_ID =` buraya asistan hesabının my.telegram.org dan api id alıp yanına ekleyin
 
-`API_HASH =`
+`API_HASH =` buraya asistan hesabının my.telegram.org dan api has alıp yanına ekleyin
 
-`BOT_TOKEN =`
+`BOT_TOKEN =` buraya telegramda bot fatherden aldığınız botun tokenini ekleyin
 
-`STRING_SESSION =`
+`STRING_SESSION =` buraya asistan hesabının string sensionunu ekleyin telegramda string alma botları mevut arama çubuğuna string session generator yazınca çıkar
 
-`OWNER_ID =`
+`OWNER_ID =` botun sahibinin hesap id sini yazın rose botuna /id komutunu göndererek alabilirsiniz
 
-`LOG_GROUP_ID =`
+`LOG_GROUP_ID =` müsik botunun logları göndereceği boş ir kanalın id sini ekleyin botlar aracılığıyla yine alınabilir
 
-**aşağıdaki utonları kulanarak kaydedin ve çıkın**
+**aşağıdaki butonları kulanarak kaydedin ve çıkın**
 
 ```ctrl + s```
 
