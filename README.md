@@ -98,4 +98,6 @@ pip install -r requirements.txt
 python3 kingmuzik.py
 ```
 
+---
  [![Telegram Badge](https://img.shields.io/badge/-Telegram-blue?style=flat-quare&labelColor=dark_blue&logo=Telegram&logoColor=dark_blue&link=t.me/kingduyurular)](https://t.me/kingduyurular) **kanalımıza katılın takipte kalın**
+---
