@@ -36,7 +36,9 @@
 ## ⚙️ Kurulum
 
 # Repo'yu klonla
-''git clone https://github.com/king0din/kingmuzik''
+'''bash
+git clone https://github.com/king0din/kingmuzik
+'''
 cd kingmuzik
 
 # Sanal ortam oluştur (isteğe bağlı)
