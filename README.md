@@ -36,9 +36,8 @@
 ## ⚙️ Kurulum
 
 # Repo'yu klonla
-'''git clone https://github.com/king0din/kingmuzik'''
-
-'''cd kingmuzik'''
+''git clone https://github.com/king0din/kingmuzik''
+cd kingmuzik
 
 # Sanal ortam oluştur (isteğe bağlı)
 python -m venv venv
