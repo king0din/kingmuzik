@@ -53,6 +53,7 @@ cd kingmuzik
 nano Config.env
 ```
 **aşağıdaki gibi açılan bilgilerin karşısın doldurun**
+
 `API_ID =` 
 `API_HASH =`
 `BOT_TOKEN =`
@@ -61,6 +62,7 @@ nano Config.env
 `LOG_GROUP_ID =`
 
 **aşağıdaki utonları kulanarak kaydedin ve çıkın**
+
 ```ctrl + s```
 
 ```ctrl + x```
