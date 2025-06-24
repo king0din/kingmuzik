@@ -36,7 +36,8 @@
 ## ⚙️ Kurulum
 
 # Repo'yu klonla
-```bash git clone https://github.com/king0din/kingmuzik
+``` bash
+git clone https://github.com/king0din/kingmuzik
 ```
 cd kingmuzik
 
