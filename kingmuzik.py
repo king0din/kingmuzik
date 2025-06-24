@@ -2760,7 +2760,7 @@ async def stream_audio_or_video(client, message):
                         invite_link = await bot.export_chat_invite_link(chat_id)
                         await app.join_chat(invite_link)
                     
-                    # Biraz bekleyip tekrar dene
+                    # Biraz bekleyip tekrar deneme
                     await asyncio.sleep(3)
                     try:
                         await call.play(chat_id, stream_media, config=call_config)
