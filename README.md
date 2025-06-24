@@ -1,4 +1,4 @@
-<h1 align="center">🎵 King Müzik Bot</h1>
+<h1 align="center">🎵 King Müzik Bot</h1
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/king0din/kingmuzik?style=social" alt="Stars">
