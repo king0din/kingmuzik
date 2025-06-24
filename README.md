@@ -35,6 +35,11 @@
 
 ## ⚙️ Kurulum
 
+``` bashh
+apt update -y && apt install sudo -y && sudo apt install curl ffmpeg git nano python3-pip screen -y
+```
+
+
 # Repo'yu klonla
 ``` bash
 git clone https://github.com/king0din/kingmuzik
@@ -43,15 +48,12 @@ git clone https://github.com/king0din/kingmuzik
 cd kingmuzik
 ```
 
-# Sanal ortam oluştur (isteğe bağlı)
-```bash
-python -m venv venv
-```
-```bash
-source venv/bin/activate
-``` 
 
 # Bağımlılıkları yükle
 ```bash
 pip install -r requirements.txt
+```
+# Ve çalıştırma
+```bash
+python3 kingmuzik.py
 ```
