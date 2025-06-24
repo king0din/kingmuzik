@@ -4,6 +4,7 @@
   <img src="https://img.shields.io/github/stars/king0din/kingmuzik?style=social" alt="Stars">
   <img src="https://img.shields.io/github/forks/king0din/kingmuzik?style=social" alt="Forks">
   <img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="License">
+  [![Telegram Badge](https://img.shields.io/badge/-Telegram-blue?style=flat-quare&labelColor=dark_blue&logo=Telegram&logoColor=dark_blue&link=t.me/kingduyurular)](https://t.me/kingduyurular)
 </p>
 
 <p align="center">
