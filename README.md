@@ -1,7 +1,7 @@
 <h1 align="center">🎵 King Müzik Bot</h1
 
 <p align="center">
-  <img src="https://img.shields.io/github/king0din/kingmuzik?style=social" alt="Stars">
+  <img src="https://img.shields.io/github/stars/king0din/kingmuzik?style=social" alt="Stars">
   <img src="https://img.shields.io/github/forks/king0din/kingmuzik?style=social" alt="Forks">
   <img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="License">
 </p>
