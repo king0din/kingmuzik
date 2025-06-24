@@ -48,6 +48,22 @@ git clone https://github.com/king0din/kingmuzik
 cd kingmuzik
 ```
 
+# .env dosyasını bu komutu çalıştırıp düsenle
+``` bash
+nano Config.env
+```
+**aşağıdaki gibi açılan bilgilerin karşısın doldurun**
+`API_ID =` 
+`API_HASH =`
+`BOT_TOKEN =`
+`STRING_SESSION =`
+`OWNER_ID =`
+`LOG_GROUP_ID =`
+
+**aşağıdaki utonları kulanarak kaydedin ve çıkın**
+```ctrl + s```
+
+```ctrl + x```
 
 # Bağımlılıkları yükle
 ```bash
