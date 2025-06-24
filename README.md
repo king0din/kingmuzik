@@ -54,16 +54,22 @@ nano Config.env
 ```
 **aşağıdaki gibi açılan bilgilerin karşısın doldurun**
 
-`API_ID =` 
+`API_ID =`
+
 `API_HASH =`
+
 `BOT_TOKEN =`
+
 `STRING_SESSION =`
+
 `OWNER_ID =`
+
 `LOG_GROUP_ID =`
 
 **aşağıdaki utonları kulanarak kaydedin ve çıkın**
 
 ```ctrl + s```
+
 
 ```ctrl + x```
 
