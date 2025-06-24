@@ -69,17 +69,17 @@ nano config.env
 `LOG_GROUP_ID =` müsik botunun logları göndereceği boş ir kanalın id sini ekleyin botlar aracılığıyla yine alınabilir
 
 ## ÖRNEK aşağıdaki gibi görünmeli:
-API_ID = 1234142
+`API_ID = 1234142`
 
-API_HASH = 324v234b245y2c34v54bbv2c
+`API_HASH = 324v234b245y2c34v54bbv2c`
 
-BOT_TOKEN = 2345234623:rthfdghsdfhserthsdhsdfghsdgfh
+`BOT_TOKEN = 2345234623:rthfdghsdfhserthsdhsdfghsdgfh`
 
-STRING_SESSION = rtyujgdfvnmö98nbvcxcv98m765ergnwedfiadsfbalkdfnşabşdlkfnabkdfbiadkfniakdfniabdfjiabdşkfngipearğq0e9...
+`STRING_SESSION = rtyujgdfvnmö98nbvcxcv98m765ergnwedfiadsfbalkdfnşabşdlkfnabkdfbiadkfniakdfniabdfjiabdşkfngipearğq0e9...`
 
-OWNER_ID = 12345678
+`OWNER_ID = 12345678`
 
-LOG_GROUP_ID = -123412345134
+`LOG_GROUP_ID = -123412345134`
 
 
 **örnekteki gibi görünüyorsa aşağıdaki butonları kulanarak kaydedin ve çıkın**
