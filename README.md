@@ -39,11 +39,19 @@
 ``` bash
 git clone https://github.com/king0din/kingmuzik
 ```
+``` bash
 cd kingmuzik
+```
 
 # Sanal ortam oluştur (isteğe bağlı)
+```bash
 python -m venv venv
+```
+```bash
 source venv/bin/activate
+``` 
 
 # Bağımlılıkları yükle
+```bash
 pip install -r requirements.txt
+```
