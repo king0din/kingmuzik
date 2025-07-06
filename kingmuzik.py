@@ -1098,20 +1098,9 @@ async def update_player_message(chat_id, force_update=False):
             wait_time = e.value
             LOGGER.info(f"Mesaj güncellemesi için bekleme: {wait_time} saniye")
             # Belirtilen süre kadar bekle ve bu güncellemeyi atla
-            return
+            await asyncio.sleep(wait_time)
         except Exception as e:
-            LOGGER.error(f"Oynatıcı güncelleme hatası: {str(e)}")
-    except Exception as e:
-        LOGGER.error(f"Oynatıcı güncelleme döngüsü hatası: {str(e)}")
-
-# Oynatıcı güncelleme döngüsü
-async def update_player_loop():
-    while True:
-        try:
-            for chat_id in list(PLAYER_MESSAGES.keys()):
-                await update_player_message(chat_id)
-        except Exception as e:
-            LOGGER.error(f"Oynatıcı güncelleme döngüsü hatası: {str(e)}")
+            LOGGER.error(f"Oynatıcı mesajı güncelleme hatası: {str(e)}")
         
         # Her 10 saniyede bir güncelle (Flood hatalarını azaltmak için)
         await asyncio.sleep(10)
@@ -1196,15 +1185,7 @@ async def send_player_message(chat_id, title, duration, stream_type, mention, th
 async def reset_player_message(chat_id):
     if chat_id in PLAYER_MESSAGES:
         try:
-            # Mesajı silme
-            await PLAYER_MESSAGES[chat_id].delete()
-        except Exception as e:
-            LOGGER.error(f"Oynatıcı mesajı silme hatası: {str(e)}")
-        finally:
-            # Mesaj referansını temizle
-            PLAYER_MESSAGES.pop(chat_id, None)
-            STREAM_TIMES.pop(chat_id, None)
-
+            # await PLAYER_MESSAGES[chat_id].delete()
 # Tüm Akışları Günlüğe Kaydet
 async def stream_logger(chat_id, user, title, duration, stream_type, position=None):
     if LOG_GROUP_ID != 0:
@@ -1355,10 +1336,7 @@ async def change_stream(chat_id):
         # Çağrıyı başlat
         await call.play(chat_id, stream_media, config=call_config)
         
-        # Bilgilendirme mesajını sil
-        await info_msg.delete()
-        
-        # İlerleme çubuklu yeni oynatıcı mesajını göster
+        # await info_msg.delete()
         await send_player_message(chat_id, title, duration, stream_type, mention, thumbnail)
         
         # Aktif çalma durumunu güncelle
@@ -1407,5 +1385,149 @@ async def unban_group_command(client, message):
 
     await remove_banned_chat(chat_id)
     await message.reply_text(f"**✅ Grup yasağı kaldırıldı:** `{chat_id}`")
+
+
+
+
+@bot.on_message(cdx(["oynat", "play"]))
+async def play_command(client, message):
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+    query = " ".join(message.command[1:])
+
+    if not query:
+        await message.reply_text("**Lütfen bir şarkı adı veya YouTube linki girin.**")
+        return
+
+    # Asistanın gruba ekli ve yönetici olduğundan emin ol
+    if not await check_and_join_chat(chat_id, message):
+        return
+
+    # Sesli sohbete katıl
+    try:
+        await call.join(chat_id)
+    except Exception as e:
+        await message.reply_text(f"**❌ Sesli sohbete katılamadım:** `{str(e)}`")
+        return
+
+    # Arama yap
+    try:
+        search = VideosSearch(query, limit=1)
+        result = (await search.next())["result"][0]
+        title = result["title"]
+        duration = result["duration"]
+        thumbnail = result["thumbnails"][0]["url"]
+        link = result["link"]
+        vidid = result["id"]
+    except Exception as e:
+        await message.reply_text(f"**❌ Şarkı bulunamadı:** `{str(e)}`")
+        return
+
+    # Kuyruğa ekle
+    position = await add_to_queue(chat_id, message.from_user, title, duration, link, "Ses", thumbnail)
+
+    if position == 0:
+        # İlk şarkıysa hemen çal
+        await change_stream(chat_id)
+    else:
+        # Kuyruğa eklendi mesajı
+        await message.reply_text(f"**✅ Kuyruğa eklendi:** `{title}`\n**Sıra:** `{position + 1}`")
+
+    # Log kaydı
+    await stream_logger(chat_id, message.from_user, title, duration, "Ses", position)
+
+
+@bot.on_message(cdx(["durdur", "pause"])) 
+async def pause_command(client, message):
+    chat_id = message.chat.id
+    if chat_id not in ACTIVE_MEDIA_CHATS:
+        await message.reply_text("**❌ Sesli sohbette çalan bir şey yok.**")
+        return
+    try:
+        await call.pause_stream(chat_id)
+        await message.reply_text("**⏸️ Yayın duraklatıldı.**")
+        await update_player_message(chat_id, force_update=True)
+    except Exception as e:
+        await message.reply_text(f"**❌ Yayını duraklatırken hata oluştu:** `{str(e)}`")
+
+@bot.on_message(cdx(["devam", "resume"])) 
+async def resume_command(client, message):
+    chat_id = message.chat.id
+    if chat_id not in ACTIVE_MEDIA_CHATS:
+        await message.reply_text("**❌ Sesli sohbette çalan bir şey yok.**")
+        return
+    try:
+        await call.resume_stream(chat_id)
+        await message.reply_text("**▶️ Yayın devam ettirildi.**")
+        await update_player_message(chat_id, force_update=True)
+    except Exception as e:
+        await message.reply_text(f"**❌ Yayını devam ettirirken hata oluştu:** `{str(e)}`")
+
+@bot.on_message(cdx(["atla", "skip"])) 
+async def skip_command(client, message):
+    chat_id = message.chat.id
+    if chat_id not in ACTIVE_MEDIA_CHATS:
+        await message.reply_text("**❌ Sesli sohbette çalan bir şey yok.**")
+        return
+    try:
+        await change_stream(chat_id)
+        await message.reply_text("**⏭️ Şarkı atlandı.**")
+    except Exception as e:
+        await message.reply_text(f"**❌ Şarkıyı atlarken hata oluştu:** `{str(e)}`")
+
+@bot.on_message(cdx(["bitir", "end"])) 
+async def end_command(client, message):
+    chat_id = message.chat.id
+    if chat_id not in ACTIVE_MEDIA_CHATS:
+        await message.reply_text("**❌ Sesli sohbette çalan bir şey yok.**")
+        return
+    try:
+        await close_stream(chat_id)
+        await message.reply_text("**⏹️ Yayın sona erdi.**")
+    except Exception as e:
+        await message.reply_text(f"**❌ Yayını sona erdirirken hata oluştu:** `{str(e)}`")
+
+async def close_stream(chat_id):
+    try:
+        await call.leave_call(chat_id)
+    except Exception as e:
+        LOGGER.error(f"Sesli sohbetten ayrılırken hata: {e}")
+    finally:
+        await remove_active_media_chat(chat_id)
+        await clear_queue(chat_id)
+        await reset_player_message(chat_id)
+
+
+@bot.on_message(cdx(["kuyruk", "queue"])) 
+async def queue_command(client, message):
+    chat_id = message.chat.id
+    if chat_id not in QUEUE or not QUEUE[chat_id]:
+        await message.reply_text("**❌ Kuyruk boş.**")
+        return
+    
+    queue_list = "**🎵 Kuyruk:**\n\n"
+    for i, track in enumerate(QUEUE[chat_id]):
+        queue_list += f"**{i+1}.** `{track["title"]}` - `{track["duration"]}` (İsteyen: {track["mention"]})\n"
+    
+    if len(queue_list) > 4096:
+        # Eğer mesaj çok uzunsa, pastebin gibi bir yere yükle
+        link = await paste_queue(queue_list)
+        await message.reply_text(f"**🎵 Kuyruk çok uzun, buradan erişebilirsiniz:** {link}")
+    else:
+        await message.reply_text(queue_list)
+
+@bot.on_message(cdx(["baslat", "start"])) 
+async def start_command(client, message):
+    await message.reply_text("**Merhaba! Ben King Müzik Botu.**\n\nSesli sohbetlerde müzik çalmak için beni kullanabilirsiniz.\n\n**Komutlar:**\n`/oynat <şarkı adı/linki>` - Müzik çalmaya başlar veya kuyruğa ekler\n`/durdur` - Çalan müziği duraklatır\n`/devam` - Duraklatılan müziği devam ettirir\n`/atla` - Sıradaki şarkıya geçer\n`/bitir` - Yayını sona erdirir\n`/kuyruk` - Kuyruktaki şarkıları gösterir\n`/ping` - Botun gecikmesini gösterir\n`/yardim` - Bu mesajı gösterir\n\n**Sahip Komutları:**\n`/ban_group <grup_id>` - Belirtilen grubu yasaklar\n`/unban_group <grup_id>` - Belirtilen grubun yasağını kaldırır\n\n**Daha fazla bilgi için:** @kingduyurular")
+
+@bot.on_message(cdx(["ping"])) 
+async def ping_command(client, message):
+    ping_time = await measure_ping()
+    await message.reply_text(f"**🏓 Pong!** `{ping_time}ms`")
+
+@bot.on_message(cdx(["yardim", "help"])) 
+async def help_command(client, message):
+    await message.reply_text("**Merhaba! Ben King Müzik Botu.**\n\nSesli sohbetlerde müzik çalmak için beni kullanabilirsiniz.\n\n**Komutlar:**\n`/oynat <şarkı adı/linki>` - Müzik çalmaya başlar veya kuyruğa ekler\n`/durdur` - Çalan müziği duraklatır\n`/devam` - Duraklatılan müziği devam ettirir\n`/atla` - Sıradaki şarkıya geçer\n`/bitir` - Yayını sona erdirir\n`/kuyruk` - Kuyruktaki şarkıları gösterir\n`/ping` - Botun gecikmesini gösterir\n`/yardim` - Bu mesajı gösterir\n\n**Sahip Komutları:**\n`/ban_group <grup_id>` - Belirtilen grubu yasaklar\n`/unban_group <grup_id>` - Belirtilen grubun yasağını kaldırır\n\n**Daha fazla bilgi için:** @kingduyurular")
+
 
 
