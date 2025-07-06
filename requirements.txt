@@ -9,4 +9,8 @@ pillow==9.5.0
 py-tgcalls==2.1.1
 python-dotenv==1.0.1
 tgcrypto==1.2.5
-https://github.com/adityahalder/pyrogram/archive/master.zip
+pyrogram==2.0.100 # Güncel ve kararlı sürüm
+youtube-search-python==1.6.2 # Eksik bağımlılık
+psutil==5.9.8 # Eksik bağımlılık
+
+
