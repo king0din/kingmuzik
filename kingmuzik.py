@@ -1112,6 +1112,7 @@ async def send_player_message(chat_id, title, duration, stream_type, mention, th
 **❍ Yayın Türü:** {stream_type}
 **❍ İsteyen:** {mention}"""
     
+    
     # İlerleme çubuğunu buton olarak ekle
     progress_line = "00:00 □□□□□□□□□□ " + duration if duration not in ["Canlı", "Canlı Yayın"] else "🔴 CANLI YAYIN"
     
@@ -1181,7 +1182,14 @@ async def send_player_message(chat_id, title, duration, stream_type, mention, th
 async def reset_player_message(chat_id):
     if chat_id in PLAYER_MESSAGES:
         try:
-            # await PLAYER_MESSAGES[chat_id].delete()
+            # Mesajı silme
+            await PLAYER_MESSAGES[chat_id].delete()
+        except Exception as e:
+            LOGGER.error(f"Oynatıcı mesajı silme hatası: {str(e)}")
+        finally:
+            # Mesaj referansını temizle
+            PLAYER_MESSAGES.pop(chat_id, None)
+            STREAM_TIMES.pop(chat_id, None)
 # Tüm Akışları Günlüğe Kaydet
 async def stream_logger(chat_id, user, title, duration, stream_type, position=None):
     if LOG_GROUP_ID != 0:
