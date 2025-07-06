@@ -84,10 +84,14 @@ nano config.env
 
 **örnekteki gibi görünüyorsa aşağıdaki butonları kulanarak kaydedin ve çıkın**
 
-```ctrl + s```
+```ctrl + o``` 
+
+config.env nin başındaki config silip .env olacak şekilde entere basıp kaydedin
+
+klavyeden ```y``` tıklayıp devam edin
 
 
-```ctrl + x```
+```ctrl + x``` tıklayıp geri çıkın
 
 # Bağımlılıkları yükle
 ```bash
