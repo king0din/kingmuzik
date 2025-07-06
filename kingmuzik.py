@@ -1105,7 +1105,6 @@ async def update_player_message(chat_id, force_update=False):
         # Her 10 saniyede bir güncelle (Flood hatalarını azaltmak için)
         await asyncio.sleep(10)
 
-# Oynatıcı mesajını oluşturma/gönderme fonksiyonu
 async def send_player_message(chat_id, title, duration, stream_type, mention, thumbnail):
     # İlk oynatıcı mesajını gönder
     caption = f"""
