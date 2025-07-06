@@ -101,9 +101,6 @@ PLAYER_MESSAGES = {}  # Oynatıcı mesajları için
 STREAM_TIMES = {}     # Şarkı başlangıç zamanları için
 
 # Komut filtreleri
-def cdx(commands: Union[str, List[str]]):
-    return pyrofl.command(commands, ["/", "!", "."]) & ~pyrofl.chat(list(BANNED_CHATS))
-
 def cdz(commands: Union[str, List[str]]):
     return pyrofl.command(commands, ["", "/", "!", "."]) & ~pyrofl.chat(list(BANNED_CHATS))
 
