@@ -12,5 +12,5 @@ tgcrypto==1.2.5
 pyrogram==2.0.100 # Güncel ve kararlı sürüm
 youtube-search-python==1.6.2 # Eksik bağımlılık
 psutil==5.9.8 # Eksik bağımlılık
-
+yt-dlp
 
