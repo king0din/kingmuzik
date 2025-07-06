@@ -88,15 +88,13 @@ DB_PATH = "database"
 os.makedirs(DB_PATH, exist_ok=True)
 SERVED_CHATS_FILE = f"{DB_PATH}/served_chats.json"
 SERVED_USERS_FILE = f"{DB_PATH}/served_users.json"
-ALLOWED_CHATS_FILE = f"{DB_PATH}/allowed_chats.json"
-GROUP_AUTH_FILE = f"{DB_PATH}/group_auth.json"
+BANNED_CHATS_FILE = f"{DB_PATH}/banned_chats.json"
 
 # Memory Database
 ACTIVE_AUDIO_CHATS = []
 ACTIVE_VIDEO_CHATS = []
 ACTIVE_MEDIA_CHATS = []
-ALLOWED_CHATS = set()  # İzin verilen grupları saklamak için
-GROUP_AUTH_ENABLED = True  # Varsayılan olarak grup yetkilendirme aktif
+BANNED_CHATS = set()  # Yasaklı grupları saklamak için
 
 QUEUE = {}
 PLAYER_MESSAGES = {}  # Oynatıcı mesajları için
@@ -104,10 +102,10 @@ STREAM_TIMES = {}     # Şarkı başlangıç zamanları için
 
 # Komut filtreleri
 def cdx(commands: Union[str, List[str]]):
-    return pyrofl.command(commands, ["/", "!", "."])
+    return pyrofl.command(commands, ["/", "!", "."]) & ~pyrofl.chat(list(BANNED_CHATS))
 
 def cdz(commands: Union[str, List[str]]):
-    return pyrofl.command(commands, ["", "/", "!", "."])
+    return pyrofl.command(commands, ["", "/", "!", "."]) & ~pyrofl.chat(list(BANNED_CHATS))
 
 def rgx(pattern: Union[str, Pattern]):
     return pyrofl.regex(pattern)
@@ -115,27 +113,7 @@ def rgx(pattern: Union[str, Pattern]):
 # Bot sahibi kontrol
 bot_owner_only = pyrofl.user(OWNER_ID)
 
-# İzin verilen gruplarda çalışma kontrol
-def is_allowed_chat(_, __, m):
-    if m.from_user and m.from_user.id == OWNER_ID:
-        return True
-    
-    # Özel mesajlarda her zaman çalış
-    if m.chat.type == ChatType.PRIVATE:
-        return True
-    
-    # Grup yetkilendirme devre dışı ise, tüm gruplarda çalış
-    if not GROUP_AUTH_ENABLED:
-        return True
-    
-    # İzinli gruplarda çalış
-    if m.chat.id in ALLOWED_CHATS:
-        return True
-    
-    # Diğer tüm durumlarda hiçbir komuta yanıt verme
-    return False
-
-allowed_chat_filter = pyrofl.create(is_allowed_chat)
+# Yasaklı grup kontrolü
 
 app = Client(
     name="App",
@@ -175,70 +153,39 @@ def save_json(file_path, data):
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-# Grup yetkilendirme durumu işlevleri
-def save_group_auth_status():
-    """Grup yetkilendirme durumunu kaydet"""
-    try:
-        data = {"enabled": GROUP_AUTH_ENABLED}
-        save_json(GROUP_AUTH_FILE, data)
-        LOGGER.info(f"Grup yetkilendirme durumu kaydedildi: {GROUP_AUTH_ENABLED}")
-    except Exception as e:
-        LOGGER.error(f"Grup yetkilendirme durumu kaydedilirken hata: {e}")
+# Yasaklı grup işlevleri
+async def load_banned_chats():
+    """Dosyadan yasaklı grupları yükle"""
+    data = load_json(BANNED_CHATS_FILE)
+    banned_chat_ids = data.get("banned_chats", [])
+    BANNED_CHATS.update(banned_chat_ids)
+    LOGGER.info(f"Toplam {len(BANNED_CHATS)} yasaklı grup yüklendi.")
 
-async def load_group_auth_status():
-    """Grup yetkilendirme durumunu yükle"""
-    global GROUP_AUTH_ENABLED
-    try:
-        if not os.path.exists(GROUP_AUTH_FILE):
-            save_json(GROUP_AUTH_FILE, {"enabled": True})
-            return
-        
-        data = load_json(GROUP_AUTH_FILE)
-        GROUP_AUTH_ENABLED = data.get("enabled", True)
-        LOGGER.info(f"Grup yetkilendirme durumu yüklendi: {GROUP_AUTH_ENABLED}")
-    except Exception as e:
-        LOGGER.error(f"Grup yetkilendirme durumu yüklenirken hata: {e}")
-
-# Dosya tabanlı veritabanı işlevleri
-async def load_allowed_chats():
-    """Dosyadan izin verilen grupları yükle"""
-    data = load_json(ALLOWED_CHATS_FILE)
-    allowed_chat_ids = data.get("allowed_chats", [])
-    ALLOWED_CHATS.update(allowed_chat_ids)
-    LOGGER.info(f"Toplam {len(ALLOWED_CHATS)} izinli grup yüklendi.")
-
-async def add_allowed_chat(chat_id: int):
-    """Bir grubu izin verilen gruplara ekle"""
-    # Eğer grup zaten izinli ise işlem yapma
-    if chat_id in ALLOWED_CHATS:
+async def add_banned_chat(chat_id: int):
+    """Bir grubu yasaklı gruplara ekle"""
+    if chat_id in BANNED_CHATS:
         return
 
-    # Belleğe ekle
-    ALLOWED_CHATS.add(chat_id)
-    
-    # Dosyaya kaydet
-    data = load_json(ALLOWED_CHATS_FILE)
-    allowed_chats = data.get("allowed_chats", [])
-    if chat_id not in allowed_chats:
-        allowed_chats.append(chat_id)
-        data["allowed_chats"] = allowed_chats
-        save_json(ALLOWED_CHATS_FILE, data)
+    BANNED_CHATS.add(chat_id)
+    data = load_json(BANNED_CHATS_FILE)
+    banned_chats = data.get("banned_chats", [])
+    if chat_id not in banned_chats:
+        banned_chats.append(chat_id)
+        data["banned_chats"] = banned_chats
+        save_json(BANNED_CHATS_FILE, data)
 
-async def remove_allowed_chat(chat_id: int):
-    """Bir grubu izin verilen gruplardan çıkar"""
-    # Bellekten çıkar
-    if chat_id in ALLOWED_CHATS:
-        ALLOWED_CHATS.remove(chat_id)
+async def remove_banned_chat(chat_id: int):
+    """Bir grubu yasaklı gruplardan çıkar"""
+    if chat_id in BANNED_CHATS:
+        BANNED_CHATS.remove(chat_id)
     
-    # Dosyadan çıkar
-    data = load_json(ALLOWED_CHATS_FILE)
-    allowed_chats = data.get("allowed_chats", [])
-    if chat_id in allowed_chats:
-        allowed_chats.remove(chat_id)
-        data["allowed_chats"] = allowed_chats
-        save_json(ALLOWED_CHATS_FILE, data)
+    data = load_json(BANNED_CHATS_FILE)
+    banned_chats = data.get("banned_chats", [])
+    if chat_id in banned_chats:
+        banned_chats.remove(chat_id)
+        data["banned_chats"] = banned_chats
+        save_json(BANNED_CHATS_FILE, data)
         
-    # Aktif bir yayın varsa sonlandır
     if chat_id in ACTIVE_MEDIA_CHATS:
         await close_stream(chat_id)
 
@@ -342,16 +289,11 @@ async def main():
         save_json(SERVED_CHATS_FILE, {"served_chats": []})
     if not os.path.exists(SERVED_USERS_FILE):
         save_json(SERVED_USERS_FILE, {"served_users": []})
-    if not os.path.exists(ALLOWED_CHATS_FILE):
-        save_json(ALLOWED_CHATS_FILE, {"allowed_chats": []})
-    if not os.path.exists(GROUP_AUTH_FILE):
-        save_json(GROUP_AUTH_FILE, {"enabled": True})
+    if not os.path.exists(BANNED_CHATS_FILE):
+        save_json(BANNED_CHATS_FILE, {"banned_chats": []})
     
-    # İzin verilen grupları yükle
-    await load_allowed_chats()
-    
-    # Grup yetkilendirme durumunu yükle
-    await load_group_auth_status()
+    # Yasaklı grupları yükle
+    await load_banned_chats()
     
     await asyncio.sleep(1)
     LOGGER.info("Gerekli değişkenler kontrol ediliyor . ..")
@@ -1081,7 +1023,7 @@ async def update_player_message(chat_id, force_update=False):
             return
             
         current_track = QUEUE[chat_id][0]
-        title = current_track.get("title", "").replace("[", "").replace("]", "")
+        title = current_track.get("title", "").replace("[", "").replace("[", "").replace("]", "")
         duration_str = current_track.get("duration", "0")
         stream_type = current_track.get("stream_type", "Ses")
         mention = current_track.get("mention", "")
@@ -1357,8 +1299,8 @@ async def get_call_status(chat_id):
 
 # Yayını Değiştir ve Yayını Kapat
 async def change_stream(chat_id):
-    # Grup izin kontrolü ekle - DÜZELTME YAPILDI
-    if GROUP_AUTH_ENABLED and chat_id not in ALLOWED_CHATS:
+    # Yasaklı grup kontrolü ekle
+    if chat_id in BANNED_CHATS:
         return await close_stream(chat_id)
         
     queued = QUEUE.get(chat_id)
@@ -1433,5 +1375,37 @@ async def change_stream(chat_id):
 
 if __name__ == "__main__":
     loop.run_until_complete(main())
+
+
+
+@bot.on_message(cdx(["ban_group", "yasakla"]) & bot_owner_only)
+async def ban_group_command(client, message):
+    if len(message.command) < 2:
+        await message.reply_text("**Kullanım:** `/ban_group <grup_id>` veya `/yasakla <grup_id>`")
+        return
+    
+    try:
+        chat_id = int(message.command[1])
+    except ValueError:
+        await message.reply_text("**Geçersiz grup ID.** Lütfen sayısal bir ID girin.")
+        return
+
+    await add_banned_chat(chat_id)
+    await message.reply_text(f"**✅ Grup yasaklandı:** `{chat_id}`")
+
+@bot.on_message(cdx(["unban_group", "yasakkaldir"]) & bot_owner_only)
+async def unban_group_command(client, message):
+    if len(message.command) < 2:
+        await message.reply_text("**Kullanım:** `/unban_group <grup_id>` veya `/yasakkaldir <grup_id>`")
+        return
+    
+    try:
+        chat_id = int(message.command[1])
+    except ValueError:
+        await message.reply_text("**Geçersiz grup ID.** Lütfen sayısal bir ID girin.")
+        return
+
+    await remove_banned_chat(chat_id)
+    await message.reply_text(f"**✅ Grup yasağı kaldırıldı:** `{chat_id}`")
 
 
