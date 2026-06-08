@@ -1098,9 +1098,11 @@ async def update_player_message(chat_id, force_update=False):
             await asyncio.sleep(wait_time)
         except Exception as e:
             LOGGER.error(f"Oynatıcı mesajı güncelleme hatası: {str(e)}")
-        
-        # Her 10 saniyede bir güncelle (Flood hatalarını azaltmak için)
-        await asyncio.sleep(10)
+    except Exception as e:
+        LOGGER.error(f"update_player_message genel hatası: {str(e)}")
+    
+    # Her 10 saniyede bir güncelle (Flood hatalarını azaltmak için)
+    await asyncio.sleep(10)
 
 async def send_player_message(chat_id, title, duration, stream_type, mention, thumbnail):
     # İlk oynatıcı mesajını gönder
@@ -1355,12 +1357,7 @@ async def change_stream(chat_id):
         return await close_stream(chat_id)
 
 
-if __name__ == "__main__":
-    loop.run_until_complete(main())
 
-
-
-@bot.on_message(cdx(["ban_group", "yasakla"]) & bot_owner_only)
 async def ban_group_command(client, message):
     if len(message.command) < 2:
         await message.reply_text("**Kullanım:** `/ban_group <grup_id>` veya `/yasakla <grup_id>`")
@@ -1375,7 +1372,7 @@ async def ban_group_command(client, message):
     await add_banned_chat(chat_id)
     await message.reply_text(f"**✅ Grup yasaklandı:** `{chat_id}`")
 
-@bot.on_message(cdx(["unban_group", "yasakkaldir"]) & bot_owner_only)
+@bot.on_message(cdz(["unban_group", "yasakkaldir"]) & bot_owner_only)
 async def unban_group_command(client, message):
     if len(message.command) < 2:
         await message.reply_text("**Kullanım:** `/unban_group <grup_id>` veya `/yasakkaldir <grup_id>`")
@@ -1393,7 +1390,7 @@ async def unban_group_command(client, message):
 
 
 
-@bot.on_message(cdx(["oynat", "play"]))
+@bot.on_message(cdz(["oynat", "play"]))
 async def play_command(client, message):
     chat_id = message.chat.id
     user_id = message.from_user.id
@@ -1441,7 +1438,7 @@ async def play_command(client, message):
     await stream_logger(chat_id, message.from_user, title, duration, "Ses", position)
 
 
-@bot.on_message(cdx(["durdur", "pause"])) 
+@bot.on_message(cdz(["durdur", "pause"])) 
 async def pause_command(client, message):
     chat_id = message.chat.id
     if chat_id not in ACTIVE_MEDIA_CHATS:
@@ -1454,7 +1451,7 @@ async def pause_command(client, message):
     except Exception as e:
         await message.reply_text(f"**❌ Yayını duraklatırken hata oluştu:** `{str(e)}`")
 
-@bot.on_message(cdx(["devam", "resume"])) 
+@bot.on_message(cdz(["devam", "resume"])) 
 async def resume_command(client, message):
     chat_id = message.chat.id
     if chat_id not in ACTIVE_MEDIA_CHATS:
@@ -1467,7 +1464,7 @@ async def resume_command(client, message):
     except Exception as e:
         await message.reply_text(f"**❌ Yayını devam ettirirken hata oluştu:** `{str(e)}`")
 
-@bot.on_message(cdx(["atla", "skip"])) 
+@bot.on_message(cdz(["atla", "skip"])) 
 async def skip_command(client, message):
     chat_id = message.chat.id
     if chat_id not in ACTIVE_MEDIA_CHATS:
@@ -1479,7 +1476,7 @@ async def skip_command(client, message):
     except Exception as e:
         await message.reply_text(f"**❌ Şarkıyı atlarken hata oluştu:** `{str(e)}`")
 
-@bot.on_message(cdx(["bitir", "end"])) 
+@bot.on_message(cdz(["bitir", "end"])) 
 async def end_command(client, message):
     chat_id = message.chat.id
     if chat_id not in ACTIVE_MEDIA_CHATS:
@@ -1502,7 +1499,7 @@ async def close_stream(chat_id):
         await reset_player_message(chat_id)
 
 
-@bot.on_message(cdx(["kuyruk", "queue"])) 
+@bot.on_message(cdz(["kuyruk", "queue"])) 
 async def queue_command(client, message):
     chat_id = message.chat.id
     if chat_id not in QUEUE or not QUEUE[chat_id]:
@@ -1511,7 +1508,7 @@ async def queue_command(client, message):
     
     queue_list = "**🎵 Kuyruk:**\n\n"
     for i, track in enumerate(QUEUE[chat_id]):
-        queue_list += f"**{i+1}.** `{track["title"]}` - `{track["duration"]}` (İsteyen: {track["mention"]})\n"
+        queue_list += f"**{i+1}.** `{track.get('title', '')}` - `{track.get('duration', '')}` (İsteyen: {track.get('mention', '')})\n"
     
     if len(queue_list) > 4096:
         # Eğer mesaj çok uzunsa, pastebin gibi bir yere yükle
@@ -1520,18 +1517,21 @@ async def queue_command(client, message):
     else:
         await message.reply_text(queue_list)
 
-@bot.on_message(cdx(["baslat", "start"])) 
+@bot.on_message(cdz(["baslat", "start"])) 
 async def start_command(client, message):
     await message.reply_text("**Merhaba! Ben King Müzik Botu.**\n\nSesli sohbetlerde müzik çalmak için beni kullanabilirsiniz.\n\n**Komutlar:**\n`/oynat <şarkı adı/linki>` - Müzik çalmaya başlar veya kuyruğa ekler\n`/durdur` - Çalan müziği duraklatır\n`/devam` - Duraklatılan müziği devam ettirir\n`/atla` - Sıradaki şarkıya geçer\n`/bitir` - Yayını sona erdirir\n`/kuyruk` - Kuyruktaki şarkıları gösterir\n`/ping` - Botun gecikmesini gösterir\n`/yardim` - Bu mesajı gösterir\n\n**Sahip Komutları:**\n`/ban_group <grup_id>` - Belirtilen grubu yasaklar\n`/unban_group <grup_id>` - Belirtilen grubun yasağını kaldırır\n\n**Daha fazla bilgi için:** @kingduyurular")
 
-@bot.on_message(cdx(["ping"])) 
+@bot.on_message(cdz(["ping"])) 
 async def ping_command(client, message):
     ping_time = await measure_ping()
     await message.reply_text(f"**🏓 Pong!** `{ping_time}ms`")
 
-@bot.on_message(cdx(["yardim", "help"])) 
+@bot.on_message(cdz(["yardim", "help"])) 
 async def help_command(client, message):
     await message.reply_text("**Merhaba! Ben King Müzik Botu.**\n\nSesli sohbetlerde müzik çalmak için beni kullanabilirsiniz.\n\n**Komutlar:**\n`/oynat <şarkı adı/linki>` - Müzik çalmaya başlar veya kuyruğa ekler\n`/durdur` - Çalan müziği duraklatır\n`/devam` - Duraklatılan müziği devam ettirir\n`/atla` - Sıradaki şarkıya geçer\n`/bitir` - Yayını sona erdirir\n`/kuyruk` - Kuyruktaki şarkıları gösterir\n`/ping` - Botun gecikmesini gösterir\n`/yardim` - Bu mesajı gösterir\n\n**Sahip Komutları:**\n`/ban_group <grup_id>` - Belirtilen grubu yasaklar\n`/unban_group <grup_id>` - Belirtilen grubun yasağını kaldırır\n\n**Daha fazla bilgi için:** @kingduyurular")
 
 
 
+
+if __name__ == "__main__":
+    loop.run_until_complete(main())
