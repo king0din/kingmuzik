@@ -353,6 +353,19 @@ async def main():
     
     await idle()
 
+# Tüm aktif sohbetlerin oynatıcı mesajlarını periyodik olarak güncelleyen döngü
+async def update_player_loop():
+    while True:
+        try:
+            for chat_id in list(ACTIVE_MEDIA_CHATS):
+                try:
+                    await update_player_message(chat_id)
+                except Exception as e:
+                    LOGGER.error(f"update_player_loop chat {chat_id} hatası: {e}")
+        except Exception as e:
+            LOGGER.error(f"update_player_loop genel hatası: {e}")
+        await asyncio.sleep(10)
+
 # Thumbnail indirme işlevi - URL kontrolleri eklendi
 async def download_thumbnail(vidid: str):
     async with aiohttp.ClientSession() as session:
