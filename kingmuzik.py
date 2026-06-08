@@ -462,111 +462,69 @@ async def is_assistant_admin(chat_id):
 
 # Asistanı gruba ekle ve yönetici yapma
 async def add_assistant_to_chat(chat_id, message=None):
-    # 1. Önce asistanın grupta olup olmadığını kontrol et
     try:
-        # Eğer bot asistanın gruba üye olup olmadığını kontrol edemiyorsa, 
-        # app client'ını kullanarak kontrol etmeyi dene
+        # 1. Asistanın grupta olup olmadığını kontrol et
+        is_member = False
         try:
+            await app.get_chat_member(chat_id, app.me.id)
+            is_member = True
+        except UserNotParticipant:
             is_member = False
-            try:
-                # Direkt olarak app client ile kontrol et
-                chat_member = await app.get_chat_member(chat_id, app.me.id)
-                is_member = True
-            except UserNotParticipant:
-                is_member = False
-            except Exception as e:
-                LOGGER.error(f"Asistan üyelik kontrolü hatası 1: {str(e)}")
-                is_member = False
-            
-            # Eğer üye değilse, gruba katılmayı dene
-            if not is_member:
-                # 2. Gruba katılmayı dene
-                success = await invite_assistant(chat_id, message)
-                if not success:
-                    if message:
-                        await message.reply_text("**❌ Asistan gruba eklenemedi.** Lütfen asistanı manuel olarak ekleyin.")
-                    return False
-            
-            # 3. Şimdi asistanın admin olup olmadığını kontrol et
-            is_admin = await is_assistant_admin(chat_id)
-            if not is_admin:
-                # 4. Admin değilse, admin yapmayı dene
-                success = await promote_assistant(chat_id, message)
-                if not success and message:
-                    await message.reply_text("**⚠️ Asistan gruba eklendi ancak yönetici yapılamadı.** Lütfen manuel olarak yönetici yapın.")
-            
-            return True
-            
         except Exception as e:
-            LOGGER.error(f"Asistan üyelik kontrolü hatası 2: {str(e)}")
-            if message:
-                await message.reply_text(f"**⚠️ Asistan durumu kontrol edilirken hata oluştu:** `{str(e)}`\nLütfen asistanı manuel olarak ekleyin ve yönetici yapın.")
-            return False
+            LOGGER.error(f"Asistan üyelik kontrolü hatası: {str(e)}")
+            # Hata alırsak üye sayıyoruz, zaten içerideyse sorun yok
+            is_member = True
+
+        # 2. Üye değilse gruba katılmayı dene
+        if not is_member:
+            success = await invite_assistant(chat_id, message)
+            if not success:
+                if message:
+                    await message.reply_text("**❌ Asistan gruba eklenemedi.** Lütfen asistanı manuel olarak ekleyin.")
+                return False
+
+        # 3. Admin kontrolü ve gerekirse admin yapma
+        is_admin = await is_assistant_admin(chat_id)
+        if not is_admin:
+            success = await promote_assistant(chat_id, message)
+            if not success and message:
+                await message.reply_text("**⚠️ Asistan yönetici yapılamadı.** Lütfen manuel olarak yönetici yapın.")
+
+        return True
+
     except Exception as e:
         LOGGER.error(f"add_assistant_to_chat genel hata: {str(e)}")
         if message:
-            await message.reply_text(f"**❌ Beklenmeyen hata:** `{str(e)}`\nLütfen asistanı manuel olarak ekleyin.")
+            await message.reply_text(f"**❌ Beklenmeyen hata:** `{str(e)}`")
         return False
-    
-    # Asistanı gruba davet et - Tamamen yeniden yazıldı
+
+# Asistanı gruba davet et
 async def invite_assistant(chat_id, message=None):
     try:
-        # 1. Önce grubun bilgilerini al
-        chat = None
+        # Kullanıcı adı ile dene
         try:
             chat = await bot.get_chat(chat_id)
-        except Exception as e:
-            LOGGER.error(f"Sohbet bilgileri alınırken hata: {str(e)}")
-            if message:
-                await message.reply_text(f"**❌ Grup bilgileri alınamadı:** `{str(e)}`")
-            return False
-        
-        # 2. Eğer grup bir kullanıcı adına sahipse, o kullanıcı adıyla katılmayı dene
-        if chat and chat.username:
-            try:
-                LOGGER.info(f"Kullanıcı adı ile gruba katılma deneniyor: @{chat.username}")
+            if chat and chat.username:
                 await app.join_chat(f"@{chat.username}")
-                await asyncio.sleep(2)  # Katılma işleminin tamamlanması için bekle
-                if message:
-                    await message.reply_text("✅ **Asistan hesabı gruba katıldı.**")
                 return True
-            except Exception as e:
-                LOGGER.error(f"Kullanıcı adı ile katılma hatası: {str(e)}")
-                # Başarısız olursa davet bağlantısı kullanmaya geç
-        
-        # 3. Davet bağlantısı oluştur ve kullan
+        except UserAlreadyParticipant:
+            return True  # Zaten üye, sorun yok
+        except Exception:
+            pass  # Başarısız, davet linki ile devam et
+
+        # Davet bağlantısı ile dene
         try:
-            # Davet bağlantısı oluştur
+            invite_link = await bot.export_chat_invite_link(chat_id)
+            await app.join_chat(invite_link)
             try:
-                LOGGER.info("Davet bağlantısı oluşturuluyor...")
-                invite_link = await bot.export_chat_invite_link(chat_id)
-                LOGGER.info(f"Oluşturulan davet bağlantısı: {invite_link}")
-            except Exception as e:
-                LOGGER.error(f"Davet bağlantısı oluşturma hatası: {str(e)}")
-                if message:
-                    await message.reply_text(f"**❌ Davet bağlantısı oluşturulamadı:** `{str(e)}`\nLütfen botu yönetici yapın ve 'Kullanıcı Ekleme' iznini verin.")
-                return False
-                
-            # Davet bağlantısı kullanarak gruba katıl
-            try:
-                LOGGER.info(f"Asistan davet bağlantısı ile gruba katılmaya çalışıyor: {invite_link}")
-                await app.join_chat(invite_link)
-                await asyncio.sleep(2)  # Katılma işleminin tamamlanması için bekle
-                
-                # Bağlantıyı kullandıktan sonra iptal et
-                try:
-                    await bot.revoke_chat_invite_link(chat_id, invite_link)
-                except:
-                    pass  # Hatayı yok say
-                
-                if message:
-                    await message.reply_text("✅ **Asistan hesabı davet bağlantısı ile gruba katıldı.**")
-                return True
-            except Exception as e:
-                LOGGER.error(f"Davet bağlantısı ile katılma hatası: {str(e)}")
-                if message:
-                    await message.reply_text(f"**❌ Asistan gruba katılamadı:** `{str(e)}`\nLütfen bota ful yt verip tekrar deneyin.")
-                return False
+                await bot.revoke_chat_invite_link(chat_id, invite_link)
+            except Exception:
+                pass
+            return True
+        except UserAlreadyParticipant:
+            return True  # Zaten üye, sorun yok
+        except InviteRequestSent:
+            return True  # İstek gönderildi
                 
         except Exception as e:
             LOGGER.error(f"Davet bağlantısı genel hata: {str(e)}")
