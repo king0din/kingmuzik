@@ -1004,11 +1004,10 @@ async def is_stream_off(chat_id: int) -> bool:
     if chat_id not in active:
         return True
     try:
-        call_status = await call.get_active_call(chat_id)
-        if call_status.status == "paused":
-            return True
-        else:
-            return False
+        call_status = await call.get_call(chat_id)
+        if call_status and hasattr(call_status, 'status'):
+            return str(call_status.status).lower() == "paused"
+        return False
     except Exception:
         return False
 
@@ -1265,36 +1264,25 @@ async def stream_logger(chat_id, user, title, duration, stream_type, position=No
 # Çağrı Durumunu Al - Hata yönetimi geliştirildi
 async def get_call_status(chat_id):
     try:
-        calls = await call.calls
-        chat_call = calls.get(chat_id)
-        if chat_call:
-            # PyTGCalls versiyonuna göre Status atributı farklı olabilir
+        call_info = await call.get_call(chat_id)
+        if call_info:
             try:
-                status = chat_call.status
-                if status == Call.Status.IDLE:
+                status = str(call_info.status).lower()
+                if "idle" in status:
                     call_status = "IDLE"
-                elif status == Call.Status.ACTIVE:
+                elif "active" in status or "playing" in status:
                     call_status = "PLAYING"
-                elif status == Call.Status.PAUSED:
+                elif "paused" in status:
                     call_status = "PAUSED"
                 else:
                     call_status = "NOTHING"
             except AttributeError:
-                # Status atributu yoksa
-                if chat_id in ACTIVE_MEDIA_CHATS:
-                    call_status = "PLAYING"
-                else:
-                    call_status = "NOTHING"
+                call_status = "PLAYING" if chat_id in ACTIVE_MEDIA_CHATS else "NOTHING"
         else:
             call_status = "NOTHING"
     except Exception as e:
         LOGGER.info(f"Çağrı durumunu alma hatası: {e}")
-        # Hata durumunda bellek değişkenlerine bakarak karar ver
-        if chat_id in ACTIVE_MEDIA_CHATS:
-            call_status = "PLAYING"
-        else:
-            call_status = "NOTHING"
-    
+        call_status = "PLAYING" if chat_id in ACTIVE_MEDIA_CHATS else "NOTHING"
     return call_status
 
 # Yayını Değiştir ve Yayını Kapat
@@ -1417,13 +1405,6 @@ async def play_command(client, message):
     if not await check_and_join_chat(chat_id, message):
         return
 
-    # Sesli sohbete katıl
-    try:
-        await call.join(chat_id)
-    except Exception as e:
-        await message.reply_text(f"**❌ Sesli sohbete katılamadım:** `{str(e)}`")
-        return
-
     # Arama yap
     try:
         search = VideosSearch(query, limit=1)
@@ -1458,7 +1439,7 @@ async def pause_command(client, message):
         await message.reply_text("**❌ Sesli sohbette çalan bir şey yok.**")
         return
     try:
-        await call.pause_stream(chat_id)
+        await call.pause(chat_id)
         await message.reply_text("**⏸️ Yayın duraklatıldı.**")
         await update_player_message(chat_id, force_update=True)
     except Exception as e:
@@ -1471,7 +1452,7 @@ async def resume_command(client, message):
         await message.reply_text("**❌ Sesli sohbette çalan bir şey yok.**")
         return
     try:
-        await call.resume_stream(chat_id)
+        await call.resume(chat_id)
         await message.reply_text("**▶️ Yayın devam ettirildi.**")
         await update_player_message(chat_id, force_update=True)
     except Exception as e:
@@ -1503,7 +1484,7 @@ async def end_command(client, message):
 
 async def close_stream(chat_id):
     try:
-        await call.leave_call(chat_id)
+        await call.leave(chat_id)
     except Exception as e:
         LOGGER.error(f"Sesli sohbetten ayrılırken hata: {e}")
     finally:
